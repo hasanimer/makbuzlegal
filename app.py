@@ -12,8 +12,8 @@ st.set_page_config(
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
-    # KRİTİK EKLEME: Temayı açık renk moduna zorluyoruz
-    theme='light',
+    # Tema ayarı: Streamlit ın `set_page_config` fonksiyonu "theme" anahtarını
+    # kabul etmediğinden bu ayarı .streamlit/config.toml dosyası ile yapmak daha güvenlidir.
     menu_items={'About': 'Legal Design Projesi'}
 )
 
