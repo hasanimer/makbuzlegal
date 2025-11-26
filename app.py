@@ -46,6 +46,20 @@ PARAMETRELER_2025 = {
     "Damga_Vergisi_Beyanname": 443.70
 }
 
+# --- MAKTU ÜCRETLER (AAÜT 2025) - global, teklif motorunda ve UI'da kullanılıyor
+MAKTU_UCRETLER = {
+    "Sulh Hukuk": 30000.00,
+    "Sulh Ceza": 18000.00,
+    "Asliye Hukuk": 45000.00,
+    "Tüketici Mahkemesi": 22500.00,
+    "Fikri Sınai Haklar": 55000.00,
+    "Ağır Ceza": 65000.00,
+    "İdare/Vergi (Duruşmasız)": 30000.00,
+    "İcra Daireleri (Takip)": 9000.00,
+    "İcra Mahkemesi": 11000.00,
+    "Bölge Adliye (İstinaf)": 35000.00
+}
+
 # --- NİSBİ ORANLAR (İCRA VE KONUSU PARA OLAN DAVALAR) ---
 NISBI_ORANLAR = [
     {"limit": 600000, "oran": 0.16},
@@ -111,19 +125,8 @@ def aaut_teklif_hesapla(dava_turu, dava_degeri, asama_durumu="Tamamı", icra_ode
     """
     AAÜT 2025 Rakamları ve Genel Hükümler (Madde 6, 7, 11, 13) kurallarına göre hesaplar.
     """
-    # 1. Sabit Veriler (Önceki PDF'ten)
-    MAKTU_UCRETLER = {
-        "Sulh Hukuk": 30000.00,
-        "Sulh Ceza": 18000.00,
-        "Asliye Hukuk": 45000.00,
-        "Tüketici Mahkemesi": 22500.00,
-        "Fikri Sınai Haklar": 55000.00,
-        "Ağır Ceza": 65000.00,
-        "İdare/Vergi (Duruşmasız)": 30000.00,
-        "İcra Daireleri (Takip)": 9000.00,
-        "İcra Mahkemesi": 11000.00,
-        "Bölge Adliye (İstinaf)": 35000.00
-    }
+    # 1. Sabit Veriler: maktu ücretler artık global MAKTU_UCRETLER sabitinde tanımlı
+    # (fonksiyon içi tanımlama kaldırıldı, global kullanılıyor)
     
     # 2. Nisbi Oranlar (3. Kısım)
     def nisbi_hesapla(deger):
@@ -255,6 +258,42 @@ elif menu == "🧮 SMM Oluştur":
             # Asgari Ücret Uyarısı (2025 Kontrolü)
             if brut < PARAMETRELER_2025["Danisma_Sozlu"]:
                 st.warning(f"⚠️ Dikkat: Tutarınız 2025 Asgari Ücret Tarifesi ({PARAMETRELER_2025['Danisma_Sozlu']} TL) altındadır!")
+
+# --- SAYFA: TEKLİF HAZIRLAMA (AAÜT) ---
+elif menu == "🤝 Teklif Hazırlama":
+    st.header("Avukatlık Asgari Ücret Hesapla")
+    st.caption("AAÜT 2025 ve Genel Hükümlere göre yasal taban ücreti hesaplar.")
+
+    with st.form("teklif_formu"):
+        col1, col2 = st.columns(2)
+        with col1:
+            # MAKTU_UCRETLER global olarak tanımlı (UI ve hesaplama paylaşımı için)
+            dava_turu = st.selectbox("Mahkeme / İşlem Türü", list(MAKTU_UCRETLER.keys()))
+            dava_degeri = st.number_input("Dava Değeri (TL)", min_value=0.0, step=1000.0, help="Konusu para değilse 0 bırakın.")
+        with col2:
+            # asama değeri aaut_teklif_hesapla fonksiyonunun beklediği stringlerle uyumlu
+            asama = st.selectbox("Aşama", ["Tamamı", "Ön İnceleme Öncesi (Sulh/Feragat/Görevsizlik)"])
+            icra_durumu = st.checkbox("İcrada ödeme süresi içinde ödendi mi?") if "İcra" in dava_turu else False
+
+        if st.form_submit_button("Asgari Ücreti Hesapla"):
+            ucret, tip, notlar = aaut_teklif_hesapla(dava_turu, dava_degeri, asama, icra_durumu)
+
+            st.divider()
+            c1, c2, c3 = st.columns([2, 1, 1])
+
+            with c1:
+                st.success(f"Yasal Asgari Teklif: **{ucret:,.2f} TL** (+KDV)")
+                st.caption(f"Hesaplama Yöntemi: {tip}")
+                st.info(f"ℹ️ **Yasal Dayanak:** {notlar}")
+
+            with c2:
+                kdv_dahil = ucret * 1.20
+                st.metric("KDV Dahil (%20)", f"{kdv_dahil:,.2f} ₺")
+
+            with c3:
+                st.metric("Brüt Tutar", f"{ucret:,.2f} ₺")
+
+            st.warning("⚠️ **Önemli Hatırlatma:** Bu tutarın altında sözleşme yapılması disiplin suçu oluşturabilir (AAÜT Madde 1).")
 
 # --- SAYFA 3: YARDIM (MAKBUZTEK SSS) ---
 elif menu == "❓ SSS & Yardım":
